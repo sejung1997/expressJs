@@ -48,7 +48,6 @@ const sql = "DELETE FROM topic WHERE @rid=:rid";
 
 const param = {
   params: {
-    title: "express",
     rid: "#34:0",
   },
 };
