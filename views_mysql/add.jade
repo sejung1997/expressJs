@@ -10,10 +10,12 @@ html
         li
           a(href='/topic/'+ topic.id)= topic.title
     article
-     form(action='/topic' method='post') 
+     form(action='/topic/add' method='post') 
         p
           input(type='text' name='title' placeholder='title')
         P 
           textarea(name='description' placeholder='description')
+        P 
+          input(name='author' placeholder='author')
         P   
           input(type='submit')
