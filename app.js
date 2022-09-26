@@ -32,16 +32,7 @@ app.get("/topic/:id", (req, res) => {
   `;
   res.send(as);
 });
-// app.get("/topic", (req, res) => {
-//   const as = `
-//     <a href="/topic?id=0">javaScript</a><br/>
-//     <a href="/topic?id=1">node</a><br/>
-//     <a href="/topic?id=2">express</a><br/>
-//     // ${req.query.id}
-//     ${req.query.id}
-//   `;
-//   res.send(as);
-// });
+
 app.get("/topic/:id/:mode", (req, res) => {
   res.send(req.params.id + "," + req.params.mode);
 });

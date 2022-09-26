@@ -27,9 +27,6 @@ app.get("/topic/add", (req, res) => {
     }
     res.render("add", { topics: topics });
   });
-  // fs.readdir("data", (err, files) => {
-  //   res.render("add", { topics: files });
-  // });
 });
 app.get(["/topic", "/topic/:id"], (req, res) => {
   const sql = "SELECT id,title FROM topic";
@@ -54,7 +51,6 @@ app.get(["/topic", "/topic/:id"], (req, res) => {
     } else {
       res.render("view", {
         topics: topics,
-        // topic:
       });
     }
   });
@@ -142,7 +138,6 @@ app.get("/topic/:id/delete", (req, res) => {
       }
     });
   });
-  // res.render("delete");
 });
 app.post("/topic/:id/delete", (req, res) => {
   const id = req.params.id;
