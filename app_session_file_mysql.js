@@ -1,5 +1,6 @@
 const express = require("express");
 const session = require("express-session");
+const MySQLStore = require("express-mysql-store")(session);
 const bodyParser = require("body-parser");
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -9,6 +10,14 @@ app.use(
     secret: "ajsdlkfasjdfkasdasdasdc",
     resave: true,
     saveUninitialized: true,
+    // session에서 사용하는 mysql 설정
+    store: new MySQLStore({
+      host: "localhost",
+      port: 3300,
+      user: "root",
+      password: "111111",
+      database: "o2",
+    }),
   })
 );
 app.get("/count", (req, res) => {

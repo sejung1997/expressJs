@@ -1,6 +1,9 @@
 const express = require("express");
 const session = require("express-session");
+const FileStore = require("session-file-store")(session);
 const bodyParser = require("body-parser");
+// const md5 = require("md5");
+const sha256 = require("sha256");
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -9,6 +12,7 @@ app.use(
     secret: "ajsdlkfasjdfkasdasdasdc",
     resave: true,
     saveUninitialized: true,
+    store: new FileStore(),
   })
 );
 app.get("/count", (req, res) => {
@@ -17,7 +21,9 @@ app.get("/count", (req, res) => {
 });
 app.get("/auth/logout", (req, res) => {
   delete req.session.displayName;
-  res.redirect("/welcome");
+  req.session.save(() => {
+    res.redirect("/welcome");
+  });
 });
 app.get("/welcome", (req, res) => {
   if (req.session.displayName) {
@@ -35,14 +41,18 @@ app.get("/welcome", (req, res) => {
 app.post("/auth/login", (req, res) => {
   const user = {
     userName: "egoing",
-    password: "111",
+    password:
+      "01ecb5368d8b61fd4861ad8a32e0a75cd3a3a44e90cadbcebf3bb22c20e6cede",
+    salt: "@!#!@$",
     displayName: "Egoing",
   };
   const name = req.body.userName;
   const pwd = req.body.password;
-  if (name === user.userName && pwd === user.password) {
+  if (name === user.userName && sha256(pwd + user.salt) === user.password) {
     req.session.displayName = user.displayName;
-    res.redirect("/welcome");
+    req.session.save(() => {
+      res.redirect("/welcome");
+    });
   } else res.send("who are you? <a href='/auth/login'>login</a>");
 });
 app.get("/auth/login", (req, res) => {
