@@ -48,12 +48,31 @@ app.post("/auth/login", (req, res) => {
   };
   const name = req.body.userName;
   const pwd = req.body.password;
-  if (name === user.userName && sha256(pwd + user.salt) === user.password) {
-    req.session.displayName = user.displayName;
-    req.session.save(() => {
-      res.redirect("/welcome");
-    });
-  } else res.send("who are you? <a href='/auth/login'>login</a>");
+  for (let i = 0; i < user.length; i++) {
+    const user = user[i];
+    if (name === user.userName) {
+      return hasher(
+        { password: pwd, salt: user.salt },
+        (err, pass, salt, hash) => {
+          if (hash === user.password) {
+            req.session.displayName = user.displayName;
+            req.session.save(() => {
+              res.redirect("/welcome");
+            });
+          } else {
+            res.send("who are you");
+          }
+        }
+      );
+    }
+  }
+  // if (name === user.userName && sha256(pwd + user.salt) === user.password) {
+  //   req.session.displayName = user.displayName;
+  //   req.session.save(() => {
+  //     res.redirect("/welcome");
+  //   });
+  // } 
+  res.send("who are you? <a href='/auth/login'>login</a>");
 });
 app.get("/auth/login", (req, res) => {
   const output = `
