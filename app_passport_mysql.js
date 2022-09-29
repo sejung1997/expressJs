@@ -1,6 +1,6 @@
 const express = require("express");
 const session = require("express-session");
-const FileStore = require("session-file-store")(session);
+const MySQLStore = require("express-mysql-store")(session);
 const bodyParser = require("body-parser");
 const bkfd2Password = require("pbkdf2-password");
 const hasher = bkfd2Password();
@@ -9,13 +9,28 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
+const mysql = require("mysql");
+const conn = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  port: "3300",
+  password: "111111",
+  database: "o2",
+});
+conn.connect();
 
 app.use(
   session({
     secret: "ajsdlkfasjdfkasdasdasdc",
     resave: true,
     saveUninitialized: true,
-    store: new FileStore(),
+    store: new MySQLStore({
+      host: "localhost",
+      port: 3300,
+      user: "root",
+      password: "111111",
+      database: "o2",
+    }),
   })
 );
 // session을 사용하기 위한 코드 app.use(session) 뒤에 있어야함
@@ -41,10 +56,17 @@ app.post("/auth/register", () => {
       salt: salt,
       displayName: req.body.displayName,
     };
-    userList.push(user);
-    req.login(user, (err) => {
-      req.session.save(() => {
-        res.redirect("/welcome");
+    const sql = "INSERT INTO users SET ?";
+    conn.query(sql, user, (err, result) => {
+      if (err) {
+        res.render(err);
+        res.status(500).send("internal server error");
+        return;
+      }
+      req.login(user, (err) => {
+        req.session.save(() => {
+          res.redirect("/welcome");
+        });
       });
     });
   });
@@ -63,47 +85,57 @@ app.get("/welcome", (req, res) => {
     `);
   }
 });
-const userList = [
-  {
-    userName: "egoing",
-    password:
-      "01ecb5368d8b61fd4861ad8a32e0a75cd3a3a44e90cadbcebf3bb22c20e6cede",
-    salt: "@!#!@$",
-    displayName: "Egoing",
-  },
-];
+
 // done() 의 첫번째 인자가 user로 전달
 passport.serializeUser((user, done) => {
   //user.userName이 세센에 저장
 
-  done(null, user.userName);
+  done(null, user.authId);
 });
 passport.deserializeUser((id, done) => {
   // 사용자가 다시 방문할때마다 userName을 검색해서user.userName이 ID로 전달됨
-  for (let i = 0; i < userList.length; i++) {
-    const user = userList[i];
-    if (user.userName === id) return done(null, user);
-  }
+  const sql = "SELECT * FROM users WHERE authId=?";
+  conn.query(sql, [id], (err, results) => {
+    if (err) done("There is no user");
+    else done(null, results)[0];
+  });
+  // for (let i = 0; i < userList.length; i++) {
+  //   const user = userList[i];
+  //   if (user.userName === id) return done(null, user);
+  // }
 });
 // 새로운 로컬 로그인 전략을 등록함
 passport.use(
   new LocalStrategy((username, password, done) => {
     const name = username;
     const pwd = password;
-    for (let i = 0; i < userList.length; i++) {
-      const user = userList[i];
-      if (name === user.userName) {
-        return hasher(
-          { password: pwd, salt: user.salt },
-          (err, pass, salt, hash) => {
-            // 성공시 user 정보 전달
-            if (hash === user.password) done(null, user);
-            else done(null, false);
-          }
-        );
-      }
-    }
-    done(null, false);
+    const sql = "SELECT * FROM users WHERE authId=?";
+    conn.query(sql, ["local:" + name], (err, results) => {
+      if (err) return done("There is no user.");
+      const user = results[0];
+      return hasher(
+        { password: pwd, salt: user.salt },
+        (err, pass, salt, hash) => {
+          if (hash === user.password) {
+            done(null, user);
+          } else done(null, false);
+        }
+      );
+    });
+    // for (let i = 0; i < userList.length; i++) {
+    //   const user = userList[i];
+    //   if (name === user.userName) {
+    //     return hasher(
+    //       { password: pwd, salt: user.salt },
+    //       (err, pass, salt, hash) => {
+    //         // 성공시 user 정보 전달
+    //         if (hash === user.password) done(null, user);
+    //         else done(null, false);
+    //       }
+    //     );
+    //   }
+    // }
+    // done(null, false);
   })
 );
 app.post(
