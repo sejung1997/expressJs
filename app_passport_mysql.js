@@ -1,23 +1,26 @@
 const express = require("express");
 const session = require("express-session");
-const MySQLStore = require("express-mysql-store")(session);
-const bodyParser = require("body-parser");
-const bkfd2Password = require("pbkdf2-password");
-const hasher = bkfd2Password();
-const passport = require("passport");
-// local 전략
-const LocalStrategy = require("passport-local").Strategy;
 const app = express();
-app.use(bodyParser.urlencoded({ extended: false }));
-const mysql = require("mysql");
-const conn = mysql.createConnection({
+const MySQLStore = require("express-mysql-session")(session);
+
+const options = {
   host: "localhost",
   user: "root",
   port: "3300",
   password: "111111",
   database: "o2",
-});
-conn.connect();
+};
+
+const bodyParser = require("body-parser");
+const bkfd2Password = require("pbkdf2-password");
+const hasher = bkfd2Password();
+
+const passport = require("passport");
+// local 전략
+const LocalStrategy = require("passport-local").Strategy;
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(passport.session());
 
 app.use(
   session({
@@ -33,8 +36,8 @@ app.use(
     }),
   })
 );
+conn.connect();
 // session을 사용하기 위한 코드 app.use(session) 뒤에 있어야함
-app.use(passport.session());
 // passport 등록
 app.use(passport.initialize());
 app.get("/count", (req, res) => {
@@ -48,14 +51,16 @@ app.get("/auth/logout", (req, res) => {
     res.redirect("/welcome");
   });
 });
-app.post("/auth/register", () => {
-  hasher({ password: req.body.password }, (err, pass, salt, hash) => {
+app.post("/auth/register", (req, res) => {
+  // res.send(req.body.username + req.body.password + req.body.displayName);
+  return hasher({ password: req.body.password }, (err, pass, salt, hash) => {
     const user = {
       username: req.body.username,
       password: hash,
       salt: salt,
       displayName: req.body.displayName,
     };
+    res.send(user);
     const sql = "INSERT INTO users SET ?";
     conn.query(sql, user, (err, result) => {
       if (err) {
@@ -71,6 +76,7 @@ app.post("/auth/register", () => {
     });
   });
 });
+
 app.get("/welcome", (req, res) => {
   // passport에 의해  req.user가 생성됨
   if (req.user && req.user.displayName) {
@@ -196,6 +202,27 @@ app.get("/auth/login", (req, res) => {
       </p>
       <p>
         <input type="password" name="password" placeholder="password"/>
+      </p>
+      <p>
+        <input type="submit"/>
+      </p>
+      
+    </form>
+  `;
+  res.send(output);
+});
+app.get("/auth/register", (req, res) => {
+  const output = `
+    <h1>register</h1>
+    <form action="/auth/register" method="post">
+      <p>
+        <input type="text" name="username" placeholder="userName"/>
+      </p>
+      <p>
+        <input type="password" name="password" placeholder="password"/>
+      </p>
+      <p>
+        <input type="text" name="displayName" placeholder="displayName"/>
       </p>
       <p>
         <input type="submit"/>
