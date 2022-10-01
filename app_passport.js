@@ -33,7 +33,28 @@ app.get("/auth/logout", (req, res) => {
     res.redirect("/welcome");
   });
 });
-app.post("/auth/register", () => {
+app.get("/auth/register", (req, res) => {
+  const output = `
+    <h1>register</h1>
+    <form action="/auth/register" method="post">
+      <p>
+        <input type="text" name="username" placeholder="userName"/>
+      </p>
+      <p>
+        <input type="password" name="password" placeholder="password"/>
+      </p>
+      <p>
+        <input type="text" name="displayName" placeholder="displayName"/>
+      </p>
+      <p>
+        <input type="submit"/>
+      </p>
+      
+    </form>
+  `;
+  res.send(output);
+});
+app.post("/auth/register", (req, res) => {
   hasher({ password: req.body.password }, (err, pass, salt, hash) => {
     const user = {
       username: req.body.username,
@@ -41,6 +62,7 @@ app.post("/auth/register", () => {
       salt: salt,
       displayName: req.body.displayName,
     };
+    console.log(user);
     userList.push(user);
     req.login(user, (err) => {
       req.session.save(() => {
@@ -51,6 +73,7 @@ app.post("/auth/register", () => {
 });
 app.get("/welcome", (req, res) => {
   // passport에 의해  req.user가 생성됨
+  console.log(req.user);
   if (req.user && req.user.displayName) {
     res.send(`
       <h1>Hello, ${req.session.displayName}</h1>
@@ -67,7 +90,7 @@ const userList = [
   {
     userName: "egoing",
     password:
-      "01ecb5368d8b61fd4861ad8a32e0a75cd3a3a44e90cadbcebf3bb22c20e6cede",
+      "RuQuuFiz95WtcVfcrYm7N2pbvpEXEJHF2qyL+Y+6bUy2Z4t47e+DrxJwDUUrXri8ANg7cWbdds9sGo/i9G/fy6xFq7n6GVkcXYSuY0yjPPMPgi1gulyDMRIet18pxgLdg03nUYV9BZQ1kawBewq8/5tGoFDsZksJ8Ab5QlUvwzg=",
     salt: "@!#!@$",
     displayName: "Egoing",
   },
@@ -90,6 +113,7 @@ passport.use(
   new LocalStrategy((username, password, done) => {
     const name = username;
     const pwd = password;
+    console.log(name, pwd);
     for (let i = 0; i < userList.length; i++) {
       const user = userList[i];
       if (name === user.userName) {
@@ -97,6 +121,7 @@ passport.use(
           { password: pwd, salt: user.salt },
           (err, pass, salt, hash) => {
             // 성공시 user 정보 전달
+            console.log(hash);
             if (hash === user.password) done(null, user);
             else done(null, false);
           }
@@ -112,6 +137,7 @@ app.post(
     // 성공시
     successRedirect: "/welcome",
     failureRedirect: "/auth/login",
+    // 알림 모달 보내기
     failureFlash: false,
   })
 );
@@ -160,7 +186,7 @@ app.get("/auth/login", (req, res) => {
     <h1>Login</h1>
     <form action="/auth/login" method="post">
       <p>
-        <input type="text" name="userName" placeholder="userName"/>
+        <input type="text" name="username" placeholder="userName"/>
       </p>
       <p>
         <input type="password" name="password" placeholder="password"/>

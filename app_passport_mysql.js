@@ -1,31 +1,28 @@
 const express = require("express");
 const session = require("express-session");
-const app = express();
 const MySQLStore = require("express-mysql-session")(session);
-
-const options = {
+const bodyParser = require("body-parser");
+const bkfd2Password = require("pbkdf2-password");
+const hasher = bkfd2Password();
+const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
+const mysql = require("mysql");
+const conn = mysql.createConnection({
   host: "localhost",
   user: "root",
   port: "3300",
   password: "111111",
   database: "o2",
-};
+});
+conn.connect();
 
-const bodyParser = require("body-parser");
-const bkfd2Password = require("pbkdf2-password");
-const hasher = bkfd2Password();
-
-const passport = require("passport");
-// local 전략
-const LocalStrategy = require("passport-local").Strategy;
-
+const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(passport.session());
 
 app.use(
   session({
     secret: "ajsdlkfasjdfkasdasdasdc",
-    resave: true,
+    resave: false,
     saveUninitialized: true,
     store: new MySQLStore({
       host: "localhost",
@@ -36,10 +33,13 @@ app.use(
     }),
   })
 );
-conn.connect();
+
+// local 전략
 // session을 사용하기 위한 코드 app.use(session) 뒤에 있어야함
 // passport 등록
 app.use(passport.initialize());
+app.use(passport.session());
+
 app.get("/count", (req, res) => {
   req.session.count ? req.session.count++ : (req.session.count = 1);
   res.send("count :" + req.session.count);
@@ -59,37 +59,44 @@ app.post("/auth/register", (req, res) => {
       password: hash,
       salt: salt,
       displayName: req.body.displayName,
+      authId: req.body.displayName,
     };
-    res.send(user);
+    // res.send(user);
+    // const sql = "SELECT * FROM users";
     const sql = "INSERT INTO users SET ?";
+    // const sql =
+    //   "INSERT INTO users SET authId='12',username='21',salt='31',displayName='42'?";
+    // const sql =
+    //   "INSERT INTO users (authId,username,password,salt,displayName) VALUES('sd','packa', 'npm','test','test')";
     conn.query(sql, user, (err, result) => {
       if (err) {
         res.render(err);
         res.status(500).send("internal server error");
         return;
       }
-      req.login(user, (err) => {
-        req.session.save(() => {
-          res.redirect("/welcome");
-        });
-      });
+      // req.login(user, (err) => {
+      //   req.session.save(() => {
+      //     res.redirect("/welcome");
+      //   });
+      // });
     });
   });
 });
 
 app.get("/welcome", (req, res) => {
   // passport에 의해  req.user가 생성됨
-  if (req.user && req.user.displayName) {
-    res.send(`
-      <h1>Hello, ${req.session.displayName}</h1>
-      <a href="/auth/logout">logout</a>
-    `);
-  } else {
-    res.send(`
-      <h1>welcome</h1>
-      <a href="/auth/login">login</a>
-    `);
-  }
+  // res.send(req);
+  // if (req.user && req.user.displayName) {
+  //   res.send(`
+  //     <h1>Hello, ${req.session.displayName}</h1>
+  //     <a href="/auth/logout">logout</a>
+  //   `);
+  // } else {
+  //   res.send(`
+  //     <h1>welcome</h1>
+  //     <a href="/auth/login">login</a>
+  //   `);
+  // }
 });
 
 // done() 의 첫번째 인자가 user로 전달
