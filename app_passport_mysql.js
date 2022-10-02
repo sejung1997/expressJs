@@ -15,7 +15,7 @@ const conn = mysql.createConnection({
   database: "o2",
 });
 conn.connect();
-
+// mvc
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -67,22 +67,24 @@ app.post("/auth/register", (req, res) => {
     // const sql =
     //   "INSERT INTO users SET authId='12',username='21',salt='31',displayName='42'?";
     // const sql =
-    //   "INSERT INTO users (authId,username,password,salt,displayName) VALUES('sd','packa', 'npm','test','test')";
+    //   "INSERT INTO users (authId,username,password,salt,displayName) VALUES('r2','r2', 'r2','r2','r2')";
     conn.query(sql, user, (err, result) => {
       if (err) {
         res.render(err);
         res.status(500).send("internal server error");
         return;
       }
-      // req.login(user, (err) => {
-      //   req.session.save(() => {
-      //     res.redirect("/welcome");
-      //   });
-      // });
+      console.log(user);
+      // res.send(result);
+      req.session.save(() => {
+        res.redirect("/welcome");
     });
+    //   req.login(user, (err) => {
+       
+    // });
   });
 });
-
+// connection pull
 app.get("/welcome", (req, res) => {
   // passport에 의해  req.user가 생성됨
   // res.send(req);
