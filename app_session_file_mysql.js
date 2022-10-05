@@ -1,10 +1,23 @@
 const express = require("express");
 const session = require("express-session");
-const MySQLStore = require("express-mysql-store")(session);
+const MySQLStore = require("express-mysql-session")(session);
 const bodyParser = require("body-parser");
+const bkfd2Password = require("pbkdf2-password");
+const hasher = bkfd2Password();
+const mysql = require("mysql");
+
 const app = express();
+
 app.use(bodyParser.urlencoded({ extended: false }));
 
+const conn = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  port: 3300,
+  password: "111111",
+  database: "o2",
+});
+conn.connect();
 app.use(
   session({
     secret: "ajsdlkfasjdfkasdasdasdc",
@@ -41,18 +54,57 @@ app.get("/welcome", (req, res) => {
     `);
   }
 });
+app.post("/auth/register", (req, res) => {
+  return hasher({ password: req.body.password }, (err, pass, salt, hash) => {
+    const user = {
+      username: req.body.userName,
+      password: hash,
+      salt: salt,
+      displayName: req.body.displayName,
+      authId: req.body.displayName,
+    };
+    // res.send(user);
+    // res.send(user);
+    // const sql = "SELECT * FROM users";
+    const sql = "INSERT INTO users SET ?";
+    // const sql =
+    //   "INSERT INTO users SET authId='12',username='21',salt='31',displayName='42'?";
+    // const sql =
+    //   "INSERT INTO users (authId,username,password,salt,displayName) VALUES('r5','r5', 'r5','r5','r5')";
+    conn.query(sql, user, (err, result) => {
+      if (err) {
+        res.render(err);
+        res.status(500).send("internal server error");
+        return;
+      }
+      req.session.displayName = user.displayName;
+      res.redirect("/welcome");
+    });
+  });
+});
 app.post("/auth/login", (req, res) => {
-  const user = {
-    userName: "egoing",
-    password: "111",
-    displayName: "Egoing",
-  };
   const name = req.body.userName;
   const pwd = req.body.password;
-  if (name === user.userName && pwd === user.password) {
-    req.session.displayName = user.displayName;
-    res.redirect("/welcome");
-  } else res.send("who are you? <a href='/auth/login'>login</a>");
+
+  const sql = "SELECT * FROM users WHERE username=?";
+  conn.query(sql, name, (err, results) => {
+    if (err) {
+      res.status(500).send("internal server error");
+    }
+    return hasher(
+      { password: pwd, salt: results[0]?.salt },
+      (err, pass, salt, hash) => {
+        if (hash === results[0]?.password) {
+          req.session.displayName = results[0]?.displayName;
+        }
+        res.redirect("/welcome");
+      }
+    );
+  });
+  // if (name === user.userName && pwd === user.password) {
+  //   req.session.displayName = user.displayName;
+  //   res.redirect("/welcome");
+  // } else res.send("who are you? <a href='/auth/login'>login</a>");
 });
 app.get("/auth/login", (req, res) => {
   const output = `
@@ -63,6 +115,27 @@ app.get("/auth/login", (req, res) => {
       </p>
       <p>
         <input type="password" name="password" placeholder="password"/>
+      </p>
+      <p>
+        <input type="submit"/>
+      </p>
+      
+    </form>
+  `;
+  res.send(output);
+});
+app.get("/auth/register", (req, res) => {
+  const output = `
+    <h1>register</h1>
+    <form action="/auth/register" method="post">
+      <p>
+        <input type="text" name="userName" placeholder="userName"/>
+      </p>
+      <p>
+        <input type="password" name="password" placeholder="password"/>
+      </p>
+      <p>
+        <input type="text" name="displayName" placeholder="displayName"/>
       </p>
       <p>
         <input type="submit"/>

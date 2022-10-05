@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(
   session({
     secret: "ajsdlkfasjdfkasdasdasdc",
-    resave: true,
+    resave: false,
     saveUninitialized: true,
     store: new FileStore(),
   })
@@ -90,19 +90,19 @@ const userList = [
   {
     userName: "egoing",
     password:
-      "RuQuuFiz95WtcVfcrYm7N2pbvpEXEJHF2qyL+Y+6bUy2Z4t47e+DrxJwDUUrXri8ANg7cWbdds9sGo/i9G/fy6xFq7n6GVkcXYSuY0yjPPMPgi1gulyDMRIet18pxgLdg03nUYV9BZQ1kawBewq8/5tGoFDsZksJ8Ab5QlUvwzg=",
+      "OrhQEpkoVGyoqPesqjxMSndXuPCprepkSjB0qfOTdxWFIQ/l379PuDyDr0m7gjkzOCpTy5Sv9Cyi3+JjIvXTpMqYBrJgMwC/HEbt2HaZvViWCQl5ybS8GTxLhzee+G2CwIXWnR/uZaOZnZjWMvon75t7JnJ4neWvUl+BhPmB5cw=",
     salt: "@!#!@$",
     displayName: "Egoing",
   },
 ];
 // done() 의 첫번째 인자가 user로 전달
 passport.serializeUser((user, done) => {
-  //user.userName이 세센에 저장
+  //user.displayName 세센에 저장
 
-  done(null, user.userName);
+  done(null, user.displayName);
 });
 passport.deserializeUser((id, done) => {
-  // 사용자가 다시 방문할때마다 userName을 검색해서user.userName이 ID로 전달됨
+  // 사용자가 다시 방문할때마다 displayName 검색해서user.displayName이 ID로 전달됨
   for (let i = 0; i < userList.length; i++) {
     const user = userList[i];
     if (user.userName === id) return done(null, user);

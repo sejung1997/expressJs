@@ -10,7 +10,7 @@ const mysql = require("mysql");
 const conn = mysql.createConnection({
   host: "localhost",
   user: "root",
-  port: "3300",
+  port: 3300,
   password: "111111",
   database: "o2",
 });
@@ -39,19 +39,14 @@ app.use(
 // passport 등록
 app.use(passport.initialize());
 app.use(passport.session());
-
+app.set("views", "./views/mysql");
+app.set("view engine", "jade");
 app.get("/count", (req, res) => {
   req.session.count ? req.session.count++ : (req.session.count = 1);
   res.send("count :" + req.session.count);
 });
-app.get("/auth/logout", (req, res) => {
-  // passport가 로그아웃 해줌
-  req.logout();
-  req.session.save(() => {
-    res.redirect("/welcome");
-  });
-});
-app.post("/auth/register", (req, res) => {
+
+app.post("/register", (req, res) => {
   // res.send(req.body.username + req.body.password + req.body.displayName);
   return hasher({ password: req.body.password }, (err, pass, salt, hash) => {
     const user = {
@@ -76,12 +71,13 @@ app.post("/auth/register", (req, res) => {
       }
       console.log(user);
       // res.send(result);
-      req.session.save(() => {
-        res.redirect("/welcome");
+      //   req.session.save(() => {
+      //     res.redirect("/welcome");
+      // });
+      req.login(user, (err) => {
+        return res.redirect("/welcome");
+      });
     });
-    //   req.login(user, (err) => {
-       
-    // });
   });
 });
 // connection pull
@@ -153,94 +149,8 @@ passport.use(
     // done(null, false);
   })
 );
-app.post(
-  "/auth/login",
-  passport.authenticate("local", {
-    // 성공시
-    successRedirect: "/welcome",
-    failureRedirect: "/auth/login",
-    failureFlash: false,
-  })
-);
-// app.post("/auth/login", (req, res) => {
-// const userList = [
-//   {
-//     userName: "egoing",
-//     password:
-//       "01ecb5368d8b61fd4861ad8a32e0a75cd3a3a44e90cadbcebf3bb22c20e6cede",
-//     salt: "@!#!@$",
-//     displayName: "Egoing",
-//   },
-// ];
-// const name = req.body.userName;
-// const pwd = req.body.password;
-// for (let i = 0; i < userList.length; i++) {
-//   const user = userList[i];
-//   if (name === user.userName) {
-//     return hasher(
-//       { password: pwd, salt: user.salt },
-//       (err, pass, salt, hash) => {
-//         if (hash === user.password) {
-//           req.session.displayName = user.displayName;
-//           req.session.save(() => {
-//             res.redirect("/welcome");
-//           });
-//         } else {
-//           res.send("who are you? <a href='/auth/login'>login</a>");
-//         }
-//       }
-//     );
-//   } else {
-//     res.send("who are you? <a href='/auth/login'>login</a>");
-//   }
-// }
-// if (name === user.userName && sha256(pwd + user.salt) === user.password) {
-//   req.session.displayName = user.displayName;
-//   req.session.save(() => {
-//     res.redirect("/welcome");
-//   });
-// }
-//   res.send("who are you? <a href='/auth/login'>login</a>");
-// });
-app.get("/auth/login", (req, res) => {
-  const output = `
-    <h1>Login</h1>
-    <form action="/auth/login" method="post">
-      <p>
-        <input type="text" name="userName" placeholder="userName"/>
-      </p>
-      <p>
-        <input type="password" name="password" placeholder="password"/>
-      </p>
-      <p>
-        <input type="submit"/>
-      </p>
-      
-    </form>
-  `;
-  res.send(output);
-});
-app.get("/auth/register", (req, res) => {
-  const output = `
-    <h1>register</h1>
-    <form action="/auth/register" method="post">
-      <p>
-        <input type="text" name="username" placeholder="userName"/>
-      </p>
-      <p>
-        <input type="password" name="password" placeholder="password"/>
-      </p>
-      <p>
-        <input type="text" name="displayName" placeholder="displayName"/>
-      </p>
-      <p>
-        <input type="submit"/>
-      </p>
-      
-    </form>
-  `;
-  res.send(output);
-});
+const auth = require("./routes/mysql/auth")(passport);
+app.use("/auth/", auth);
 app.listen(3000, () => {
   console.log("connected 3000 port");
 });
