@@ -122,8 +122,11 @@ passport.use(
           (err, pass, salt, hash) => {
             // 성공시 user 정보 전달
             console.log(hash);
-            if (hash === user.password) done(null, user);
-            else done(null, false);
+            if (hash === user.password) {
+              console.log(done());
+              console.log("done");
+              done(null, user);
+            } else done(null, false);
           }
         );
       }
